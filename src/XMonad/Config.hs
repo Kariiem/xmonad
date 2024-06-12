@@ -167,7 +167,7 @@ rootMask =  substructureRedirectMask .|. substructureNotifyMask
 -- | The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 terminal :: String
-terminal = "xterm"
+terminal = "st"
 
 -- | Whether focus follows the mouse pointer.
 focusFollowsMouse :: Bool
@@ -201,6 +201,8 @@ keys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
     , ((modMask,               xK_j     ), windows W.focusDown) -- %! Move focus to the next window
     , ((modMask,               xK_k     ), windows W.focusUp  ) -- %! Move focus to the previous window
     , ((modMask,               xK_m     ), windows W.focusMaster  ) -- %! Move focus to the master window
+    , ((modMask,               xK_BackSpace ), windows W.bury  ) -- %! Move focus to the master window
+    , ((modMask .|. shiftMask, xK_BackSpace ), windows W.unbury  ) -- %! Move focus to the master window
 
     -- modifying the window order
     , ((modMask,               xK_Return), windows W.swapMaster) -- %! Swap the focused window and the master window

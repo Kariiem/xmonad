@@ -125,8 +125,8 @@ splitVerticallyBy f = (mirrorRect *** mirrorRect) . splitHorizontallyBy f . mirr
 newtype Mirror l a = Mirror (l a) deriving (Show, Read)
 
 instance LayoutClass l a => LayoutClass (Mirror l) a where
-    runLayout (W.Workspace i (Mirror l) ms) r = (map (second mirrorRect) *** fmap Mirror)
-                                                `fmap` runLayout (W.Workspace i l ms) (mirrorRect r)
+    runLayout (W.Workspace i (Mirror l) ms us) r = (map (second mirrorRect) *** fmap Mirror)
+                                                `fmap` runLayout (W.Workspace i l ms us) (mirrorRect r)
     handleMessage (Mirror l) = fmap (fmap Mirror) . handleMessage l
     description (Mirror l) = "Mirror "++ description l
 
@@ -209,10 +209,10 @@ choose (Choose d l r) d' ml      mr = f lr
     hide x   = fromMaybe x <$> handle x Hide
 
 instance (LayoutClass l a, LayoutClass r a) => LayoutClass (Choose l r) a where
-    runLayout (W.Workspace i (Choose CL l r) ms) =
-        fmap (second . fmap $ flip (Choose CL) r) . runLayout (W.Workspace i l ms)
-    runLayout (W.Workspace i (Choose CR l r) ms) =
-        fmap (second . fmap $ Choose CR l) . runLayout (W.Workspace i r ms)
+    runLayout (W.Workspace i (Choose CL l r) ms us) =
+      fmap (second . fmap $ flip (Choose CL) r) . runLayout (W.Workspace i l ms us)
+    runLayout (W.Workspace i (Choose CR l r) ms us) =
+        fmap (second . fmap $ Choose CR l) . runLayout (W.Workspace i r ms us)
 
     description (Choose CL l _) = description l
     description (Choose CR _ r) = description r

@@ -37,6 +37,7 @@ module XMonad.StackSet (
         -- $stackOperations
         peek, index, integrate, integrate', differentiate,
         focusUp, focusDown, focusUp', focusDown', focusMaster, focusWindow,
+        bury, unbury,
         tagMember, renameTag, ensureTags, member, findTag, mapWorkspace, mapLayout,
         -- * Modifying the stackset
         -- $modifyStackset
@@ -55,7 +56,7 @@ module XMonad.StackSet (
 import Prelude hiding (filter)
 import Control.Applicative.Backwards (Backwards (Backwards, forwards))
 import Data.Foldable (foldr, toList)
-import Data.Maybe   (listToMaybe,isJust,fromMaybe)
+import Data.Maybe   (listToMaybe,maybeToList,isJust,fromMaybe)
 import qualified Data.List as L (deleteBy,find,splitAt,filter,nub)
 import Data.List ( (\\) )
 import qualified Data.List.NonEmpty as NE
@@ -154,7 +155,7 @@ data Screen i l a sid sd = Screen { workspace :: !(Workspace i l a)
 -- |
 -- A workspace is just a tag, a layout, and a stack.
 --
-data Workspace i l a = Workspace  { tag :: !i, layout :: l, stack :: Maybe (Stack a) }
+data Workspace i l a = Workspace  { tag :: !i, layout :: l, stack :: Maybe (Stack a), unmapped :: [a] }
     deriving (Show, Read, Eq)
 
 -- | A structure for window geometries
@@ -214,7 +215,7 @@ abort x = error $ "xmonad: StackSet: " ++ x
 new :: (Integral s) => l -> [i] -> [sd] -> StackSet i l a s sd
 new l (wid:wids) (m:ms) | length ms <= length wids
   = StackSet cur visi (map ws unseen) M.empty
-  where ws i = Workspace i l Nothing
+  where ws i = Workspace i l Nothing []
         (seen, unseen) = L.splitAt (length ms) wids
         cur:visi = Screen (ws wid) 0 m : [ Screen (ws i) s sd | (i, s, sd) <- zip3 seen [1..] ms ]
                 -- now zip up visibles with their screen id
@@ -404,6 +405,35 @@ focusWindow w s | Just w == peek s = s
                     n <- findTag w s
                     return $ until ((Just w ==) . peek) focusUp (view n s)
 
+-- | bury the current window
+bury :: StackSet i l a s sd -> StackSet i l a s sd
+bury s = s { current = (current s)
+              { workspace = (workspace (current s))
+                { unmapped = focusedWin ++ (unmapped (workspace (current s)))
+                , stack = with Nothing bury' s}}}
+  where
+    focusedWin = maybeToList . (focus <$>) . stack . workspace . current $ s
+
+bury' :: Stack a -> Maybe (Stack a)
+bury' (Stack _ (l:ls) rs) = Just $ Stack l ls rs
+bury' (Stack _ [] (r:rs)) = Just $ Stack x xs []
+  where (x :| xs) = NE.reverse (r :| rs)
+bury' (Stack _ [] [])     = Nothing
+
+-- | unbury the last buried window
+unbury :: StackSet i l a s sd -> StackSet i l a s sd
+unbury s = s { current = (current s)
+              { workspace = (workspace (current s))
+                { unmapped = drop 1 (unmapped (workspace (current s)))
+                , stack = unbury' lastBurriedWin . stack . workspace . current $ s}}}
+  where
+    lastBurriedWin = listToMaybe . unmapped . workspace . current $ s
+
+unbury' :: Maybe a -> Maybe (Stack a) -> Maybe (Stack a)
+unbury' (Just x) (Just (Stack t ls rs)) = Just $ Stack t ls (reverse (x:rs))
+unbury' (Just x) Nothing                = Just $ Stack x [] []
+unbury' Nothing  s                      = s
+
 -- | Get a list of all screens in the 'StackSet'.
 screens :: StackSet i l a s sd -> [Screen i l a s sd]
 screens s = current s : visible s
@@ -436,7 +466,7 @@ ensureTags :: Eq i => l -> [i] -> StackSet i l a s sd -> StackSet i l a s sd
 ensureTags l allt st = et allt (map tag (workspaces st) \\ allt) st
     where et [] _ s = s
           et (i:is) rn s | i `tagMember` s = et is rn s
-          et (i:is) [] s = et is [] (s { hidden = Workspace i l Nothing : hidden s })
+          et (i:is) [] s = et is [] (s { hidden = Workspace i l Nothing [] : hidden s })
           et (i:is) (r:rs) s = et is rs $ renameTag r i s
 
 -- | Map a function on all the workspaces in the 'StackSet'.
@@ -451,7 +481,7 @@ mapLayout :: (l -> l') -> StackSet i l a s sd -> StackSet i l' a s sd
 mapLayout f (StackSet v vs hs m) = StackSet (fScreen v) (map fScreen vs) (map fWorkspace hs) m
  where
     fScreen (Screen ws s sd) = Screen (fWorkspace ws) s sd
-    fWorkspace (Workspace t l s) = Workspace t (f l) s
+    fWorkspace (Workspace t l s us) = Workspace t (f l) s us
 
 -- | /O(n)/. Is a window in the 'StackSet'?
 member :: Eq a => a -> StackSet i l a s sd -> Bool
