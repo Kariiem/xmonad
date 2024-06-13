@@ -421,13 +421,15 @@ bury' (Stack _ [] (r:rs)) = Just $ Stack x xs []
 bury' (Stack _ [] [])     = Nothing
 
 -- | unbury the last buried window
-unbury :: StackSet i l a s sd -> StackSet i l a s sd
-unbury s = s { current = (current s)
-              { workspace = (workspace (current s))
-                { unmapped = drop 1 (unmapped (workspace (current s)))
-                , stack = unbury' lastBurriedWin . stack . workspace . current $ s}}}
+unbury :: Int -> StackSet i l a s sd -> StackSet i l a s sd
+unbury i s = s { current = (current s)
+                 { workspace = (workspace (current s))
+                   { unmapped = before ++ drop 1 after
+                   , stack = unbury' ithBurriedWin . stack . workspace . current $ s}}}
   where
-    lastBurriedWin = listToMaybe . unmapped . workspace . current $ s
+    (before, after) = splitAt i (unmapped (workspace (current s)))
+    ithBurriedWin = listToMaybe after
+
 
 unbury' :: Maybe a -> Maybe (Stack a) -> Maybe (Stack a)
 unbury' (Just x) (Just (Stack t ls rs)) = Just $ Stack t ls (reverse (x:rs))
@@ -445,6 +447,14 @@ workspaces s = workspace (current s) : map workspace (visible s) ++ hidden s
 -- | Get a list of all windows in the 'StackSet' in no particular order
 allWindows :: Eq a => StackSet i l a s sd -> [a]
 allWindows = L.nub . concatMap (integrate' . stack) . workspaces
+
+-- | Get a list of all buried windows in the current workspace
+wsBuriedWindows :: Eq a => StackSet i l a s sd -> [a]
+wsBuriedWindows = L.nub . unmapped . workspace . current
+
+-- | Get a list of all buried windows in no particular order
+allBuriedWindows :: Eq a => StackSet i l a s sd -> [a]
+allBuriedWindows = L.nub . concatMap unmapped . workspaces
 
 -- | Get the tag of the currently focused workspace.
 currentTag :: StackSet i l a s sd -> i
