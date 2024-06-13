@@ -21,10 +21,15 @@ import Graphics.X11.Xlib (Display, Window, internAtom, wM_NAME)
 import Control.Exception (bracket, SomeException(..))
 import qualified Control.Exception as E
 import Control.Monad.Reader
+import Control.Exception
+import Control.Monad.State
 import Data.Maybe
 import Data.Monoid
 import qualified XMonad.StackSet as W
-import XMonad.Operations (floatLocation, reveal, isFixedSizeOrTransient)
+import XMonad.Operations (floatLocation, reveal, isFixedSizeOrTransient, windows)
+import System.Process
+import Data.Char
+import Data.List
 
 -- | Lift an 'X' action to a 'Query'.
 liftX :: X a -> Query a
@@ -123,3 +128,17 @@ doIgnore = ask >>= \w -> liftX (reveal w) >> doF (W.delete w)
 -- | Move the window to a given workspace
 doShift :: WorkspaceId -> ManageHook
 doShift i = doF . W.shiftWin i =<< ask
+
+
+-- | Run dmenu with list of buried windows
+dmenuUnburyWS :: X ()
+dmenuUnburyWS = do
+  us <- gets $ W.unmapped . W.workspace . W.current . windowset
+  titles <- mapM (runQuery title) us
+  when (not . null $ titles) $ do
+    let dmitems = intercalate "\n"
+                $ zipWith (\t i -> show i ++ "." ++ t) titles [1::Int ..]
+    uninstallSignalHandlers
+    (_, stdout', _) <- io $ readProcessWithExitCode "dmenu" [] dmitems
+    let wi = (read $ takeWhile isDigit stdout') :: Int
+    windows $ W.unbury (wi - 1)

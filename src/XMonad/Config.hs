@@ -201,8 +201,9 @@ keys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
     , ((modMask,               xK_j     ), windows W.focusDown) -- %! Move focus to the next window
     , ((modMask,               xK_k     ), windows W.focusUp  ) -- %! Move focus to the previous window
     , ((modMask,               xK_m     ), windows W.focusMaster  ) -- %! Move focus to the master window
-    , ((modMask,               xK_BackSpace ), windows W.bury  ) -- %! Move focus to the master window
-    , ((modMask .|. shiftMask, xK_BackSpace ), windows W.unbury  ) -- %! Move focus to the master window
+    , ((modMask,               xK_BackSpace ), windows $ W.bury ) -- %! Move focus to the master window
+    , ((modMask .|. shiftMask, xK_BackSpace ), windows $ W.unbury 0 ) -- %! Move focus to the master window
+    , ((modMask .|. controlMask, xK_BackSpace ), dmenuUnburyWS  ) -- %! Move focus to the master window
 
     -- modifying the window order
     , ((modMask,               xK_Return), windows W.swapMaster) -- %! Swap the focused window and the master window
