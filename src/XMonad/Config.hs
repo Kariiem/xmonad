@@ -47,6 +47,7 @@ import System.Exit
 import Graphics.X11.Xlib
 import Graphics.X11.Xlib.Extras
 
+import XMonad.Ext
 -- | The default number of workspaces (virtual screens) and their names.
 -- By default we use numeric strings, but any string may be used as a
 -- workspace name. The number of workspaces is determined by the length
@@ -167,7 +168,7 @@ rootMask =  substructureRedirectMask .|. substructureNotifyMask
 -- | The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 terminal :: String
-terminal = "xterm"
+terminal = "st"
 
 -- | Whether focus follows the mouse pointer.
 focusFollowsMouse :: Bool
@@ -206,6 +207,8 @@ keys conf@(XConfig {XMonad.modMask = modMask}) = M.fromList $
     , ((modMask,               xK_Return), windows W.swapMaster) -- %! Swap the focused window and the master window
     , ((modMask .|. shiftMask, xK_j     ), windows W.swapDown  ) -- %! Swap the focused window with the next window
     , ((modMask .|. shiftMask, xK_k     ), windows W.swapUp    ) -- %! Swap the focused window with the previous window
+    , ((modMask , xK_BackSpace), buryX ) --
+    , ((modMask .|. shiftMask, xK_BackSpace), unburyX ) --
 
     -- resizing the master/slave ratio
     , ((modMask,               xK_h     ), sendMessage Shrink) -- %! Shrink the master area
