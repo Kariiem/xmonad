@@ -63,6 +63,8 @@ library
                    XMonad.ManageHook
                    XMonad.Operations
                    XMonad.StackSet
+                   XMonad.ExtensionUtils
+                   XMonad.Ext
   other-modules:   Paths_xmonad
   hs-source-dirs:  src
   build-depends:   base                  >= 4.12 && < 5
