@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -x
+
+export XMONAD_DATA_DIR=./tmp/data
+export XMONAD_CONFIG_DIR=./tmp/config
+export XMONAD_CACHE_DIR=./tmp/cache
+
+cabal build && {
+    xmonad_path=$(cabal list-bin xmonad)
+    Xephyr -br -ac -noreset -resizeable :1 &
+    sleep 1
+    DISPLAY=:1 "$xmonad_path"
+}
