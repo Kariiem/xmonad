@@ -17,7 +17,7 @@ import Data.List
 import Data.Maybe
 import Data.List.NonEmpty (NonEmpty((:|)))
 
-newtype BuriedWindows = BuriedWindows (M.Map  WorkspaceId [Window])
+newtype BuriedWindows = BuriedWindows (M.Map WorkspaceId [Window])
   deriving (Show, Read)
 
 instance ExtensionClass BuriedWindows where
@@ -35,6 +35,7 @@ bury s = s { current = (current s)
         where (x :| xs) = NE.reverse (r :| rs)
     bury' (Just (Stack _ [] []))     = Nothing
 
+buryX :: X()
 buryX = do
   Workspace { tag = t, stack = Just (Stack focused _ _) } <- gets $ workspace . current . windowset
   windows bury
@@ -55,6 +56,7 @@ unbury' (Just x) (Just (Stack t ls rs)) = Just $ Stack t ls (reverse (x:rs))
 unbury' (Just x) Nothing                = Just $ Stack x [] []
 unbury' Nothing  s                      = s
 
+unburyX :: X()
 unburyX = do
   Workspace { tag = t } <- gets $ workspace . current . windowset
   BuriedWindows m <- XS.get
