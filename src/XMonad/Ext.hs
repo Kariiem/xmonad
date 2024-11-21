@@ -46,22 +46,22 @@ buryX = do
 
 
 -- | unbury the last buried window
-unbury :: Maybe a -> StackSet i l a s sd -> StackSet i l a s sd
+unbury :: a -> StackSet i l a s sd -> StackSet i l a s sd
 unbury lastBuriedWin s = s { current = (current s)
                               { workspace = (workspace (current s))
                                 { stack = unbury' lastBuriedWin . stack . workspace . current $ s}}}
 
-unbury' :: Maybe a -> Maybe (Stack a) -> Maybe (Stack a)
-unbury' (Just x) (Just (Stack t ls rs)) = Just $ Stack t ls (reverse (x:rs))
-unbury' (Just x) Nothing                = Just $ Stack x [] []
-unbury' Nothing  s                      = s
+unbury' :: a -> Maybe (Stack a) -> Maybe (Stack a)
+unbury' x (Just (Stack t ls rs)) = Just $ Stack t ls (reverse (x:rs))
+unbury' x Nothing                = Just $ Stack x [] []
 
 unburyX :: X()
 unburyX = do
   Workspace { tag = t } <- gets $ workspace . current . windowset
   BuriedWindows m <- XS.get
   let currentBuriedWindows = M.findWithDefault [] t m
-  let lastBuriedWin = listToMaybe currentBuriedWindows
-  let newBuriedWindows = BuriedWindows $ M.insert t (drop 1 currentBuriedWindows) m
-  windows $ unbury lastBuriedWin
-  XS.put newBuriedWindows
+      lastBuriedWin = listToMaybe currentBuriedWindows
+      newBuriedWindows = BuriedWindows $ M.insert t (drop 1 currentBuriedWindows) m
+  whenJust lastBuriedWin $ \w -> do
+      windows $ unbury w
+      XS.put newBuriedWindows
