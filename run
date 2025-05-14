@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env bash
 
 set -x
 
@@ -6,9 +6,11 @@ export XMONAD_DATA_DIR=./tmp/data
 export XMONAD_CONFIG_DIR=./tmp/config
 export XMONAD_CACHE_DIR=./tmp/cache
 
+DISPLAY_N=$(( ${DISPLAY:1} + 1))
+
+
 cabal build && {
     xmonad_path=$(cabal list-bin xmonad)
-    Xephyr -br -ac -noreset -resizeable :1 &
-    sleep 1
-    DISPLAY=:1 "$xmonad_path"
+    Xephyr :$DISPLAY_N -br -ac -noreset -resizeable &
+    DISPLAY=:$DISPLAY_N "$xmonad_path"
 }
